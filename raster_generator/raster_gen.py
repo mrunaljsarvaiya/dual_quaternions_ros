@@ -74,12 +74,20 @@ class Raster(object):
         y_scale = np.linalg.norm(np.array(self.proj_p31_on_p21) - np.array(self.p3.translation))
         translation_offset = np.array([self.p1.translation[0], self.p1.translation[1], self.p1.translation[2], 0])
         scaling_trans_matrix = np.array([
-                                [   x_scale,    0,          0,  translation_offset[0]],
-                                [   0,          y_scale,    0,  translation_offset[1]],
-                                [   0,          0,          1,  translation_offset[2]],
-                                [   0,          0,          0,  1                    ]]
+                                [   x_scale,    0,          0,  0],
+                                [   0,          y_scale,    0,  0],
+                                [   0,          0,          1,  0],
+                                [   0,          0,          0,  1]]
                                 )
-                                
+        
+        traslation_matrix = np.array([
+                                    [1, 0, 0, translation_offset[0]],
+                                    [0, 1, 0, translation_offset[1]],
+                                    [0, 0, 1, translation_offset[2]],
+                                    [0, 0, 0 ,1]])
+
+             
+                            
         # Build matrix of pts
         pts_matrix = np.zeros([4, len(self.base_raster_pts)])
         for i in range(0, len(self.base_raster_pts)):
@@ -88,6 +96,7 @@ class Raster(object):
 
         # Apply Trasform
         transformation_matrix = np.matmul(rotation_matrix, scaling_trans_matrix)
+        transformation_matrix = np.matmul(traslation_matrix, transformation_matrix)
         print("scaling_trans_matrix \n {}".format(scaling_trans_matrix))
         print("rotation_matrix \n {}".format(rotation_matrix))
         transformed_pts = np.matmul(transformation_matrix, pts_matrix)
@@ -150,7 +159,7 @@ class Raster(object):
 
     def plot_raster(self):
         
-        fig = plt.figure()
+        fig = plt.figure( figsize=(10, 10))
 
         # Plot base raster
         ax = fig.add_subplot(211, projection='3d')
@@ -173,7 +182,7 @@ class Raster(object):
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         #ax.set_aspect('equal')
-        ax.view_init(azim=270, elev=90)
+        #ax.view_init(azim=270, elev=90)
 
         ax = fig.add_subplot(212, projection='3d')
         for idx, pts in enumerate(self.raster_pts):
@@ -197,8 +206,9 @@ class Raster(object):
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
-        ax.view_init(azim=270, elev=90)
-        ax.set_aspect('equal', 'box')
+        #ax.view_init(azim=270, elev=90)
+        ax.set_aspect('equal')
+        plt.tight_layout()
         plt.show()
 
 if __name__ == "__main__":
@@ -210,9 +220,9 @@ if __name__ == "__main__":
     myRaster.p2 = DualQuaternion.from_translation_vector([np.cos(theta), np.sin(theta) , 0])
     myRaster.p3 = DualQuaternion.from_translation_vector([np.sin(theta), -np.cos(theta) , 0])
 
-    myRaster.p1 = DualQuaternion.from_translation_vector([0.5, 0 , 0])
-    myRaster.p2 = DualQuaternion.from_translation_vector([1, -0.5 , 0])
-    myRaster.p3 = DualQuaternion.from_translation_vector([0, -1 , 0])
+    myRaster.p1 = DualQuaternion.from_translation_vector([-2, 0.2 , 0])
+    myRaster.p2 = DualQuaternion.from_translation_vector([1, 1.3 , 0])
+    myRaster.p3 = DualQuaternion.from_translation_vector([0.3, -1 , 0])
 
 
     myRaster.set_perp(myRaster.p1, myRaster.p2, myRaster.p3)
