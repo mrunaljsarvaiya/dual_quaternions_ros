@@ -29,8 +29,8 @@ class Raster(object):
         vec21 = np.array(self.p2, dtype = np.float64)  - np.array(self.p1, dtype = np.float64)
         self.proj_p31_on_p21 = self.p1 + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
 
-        # Generates base raster shape. Raster box is (0,0), (1,0), (0, -1), (1, -1) and 
-        # obeys standard xy axis and orientation
+        # Generates base raster shape. Raster box is (0,0), (1,0), (0, -1), (1, -1)
+        # Obeys standard xy axis and orientation
         self.base_raster_rows = []
 
         for i in range(0,self.raster_shape_rows + 1):
@@ -66,21 +66,19 @@ class Raster(object):
             for j in range(0, np.size(rotation_matrix,1)):
                 if np.absolute(rotation_matrix[i][j]) < 10**-5:
                     rotation_matrix[i][j] = 0
-        print("Det R {}".format(np.linalg.det(rotation_matrix)))
-        print("R*R-1: {}".format(np.matmul(rotation_matrix, np.linalg.inv(rotation_matrix))))
 
         # Get scaling factor
         x_scale = np.linalg.norm(np.array(self.p2) - np.array(self.p1))
         y_scale = np.linalg.norm(np.array(self.proj_p31_on_p21) - np.array(self.p3))
         translation_offset = np.array([self.p1[0], self.p1[1], self.p1[2], 0])
-        scaling_trans_matrix = np.array([
+        scaling_matrix = np.array([
                                 [   x_scale,    0,          0,  0],
                                 [   0,          y_scale,    0,  0],
                                 [   0,          0,          1,  0],
                                 [   0,          0,          0,  1]]
                                 )
         
-        traslation_matrix = np.array([
+        translation_matrix = np.array([
                                     [1, 0, 0, translation_offset[0]],
                                     [0, 1, 0, translation_offset[1]],
                                     [0, 0, 1, translation_offset[2]],
@@ -92,15 +90,12 @@ class Raster(object):
         pts_matrix = np.zeros([4, len(self.base_raster_pts)])
         for i in range(0, len(self.base_raster_pts)):
             pts_matrix[:2,i] = self.base_raster_pts[i]
-            pts_matrix[2:,i] = [0,1] # z =0, since base shape is on xy plane
+            pts_matrix[2:,i] = [0,1] # z = 0, since base shape is on xy plane
 
         # Apply Transform
-        transformation_matrix = np.matmul(rotation_matrix, scaling_trans_matrix)
-        transformation_matrix = np.matmul(traslation_matrix, transformation_matrix)
+        transformation_matrix = np.matmul(rotation_matrix, scaling_matrix)
+        transformation_matrix = np.matmul(translation_matrix, transformation_matrix)
         transformed_pts = np.matmul(transformation_matrix, pts_matrix)
-        print("scaling_trans_matrix \n {}".format(scaling_trans_matrix))
-        print("rotation_matrix \n {}".format(rotation_matrix))
-        print("1st row , last column {}".format(transformed_pts[:,5]))
 
         # Get raster points
         self.raster_pts = []
@@ -163,7 +158,7 @@ class Raster(object):
         #ax.set_aspect('equal')
         #ax.view_init(azim=270, elev=90)
 
-         # Plot Trasnformed raster
+         # Plot Transformed raster
         ax = fig.add_subplot(212, projection='3d')
         for idx, pts in enumerate(self.raster_pts):
             ax.scatter(pts[0],pts[1],pts[2], c = (0,1, 0), s = 5)
@@ -188,13 +183,14 @@ class Raster(object):
         ax.set_zlabel('Z')
         #ax.view_init(azim=270, elev=90)
         #ax.set_aspect('equal')
+
         plt.show()
 
 if __name__ == "__main__":
 
     theta = 45
-    myRaster = Raster([0, 0 , 0], [np.cos(theta), np.sin(theta) , 0], [np.sin(theta), -np.cos(theta) , 0])
-    #myRaster = Raster([0, 0 , 0],  [0, 0 , -1], [0, -1 , 0])
+    #myRaster = Raster([0, 0 , 0], [np.cos(theta), np.sin(theta) , 0], [np.sin(theta), -np.cos(theta) , 0])
+    myRaster = Raster([0, 0 , 0],  [0, 0 , -1], [0, -1 , 0])
 
     myRaster.transform_raster_pts()
     myRaster.plot_raster()
