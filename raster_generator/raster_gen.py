@@ -107,14 +107,6 @@ class Raster(object):
         for i in range(0, np.size(transformed_pts,1)):
             self.raster_pts.append(transformed_pts[:3])
 
-        # new_rotation_matrix = np.array([
-        #                             [1, 0, 0, 0],
-        #                             [0,0,1,0],
-        #                             [0,-1,0,0],
-        #                             [0,0,0,1]
-
-        #                             ])
-    
     def get_rotation_matrix (self, base_x, base_y, base_z, desired_x, desired_y, desired_z):
 
         # Every Column : Project desired frame axeses onto base frame
