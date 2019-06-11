@@ -62,10 +62,6 @@ class Raster(object):
         self.desired_z = np.cross(self.desired_x, self.desired_y)
 
         rotation_matrix = self.get_rotation_matrix (base_x, base_y, base_z, self.desired_x, self.desired_y, self.desired_z)
-        for i in range(0, np.size(rotation_matrix,0)):
-            for j in range(0, np.size(rotation_matrix,1)):
-                if np.absolute(rotation_matrix[i][j]) < 10**-5:
-                    rotation_matrix[i][j] = 0
 
         # Get scaling factor
         x_scale = np.linalg.norm(np.array(self.p2) - np.array(self.p1))
