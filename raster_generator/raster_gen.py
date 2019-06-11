@@ -15,10 +15,10 @@ class Raster(object):
 
     def __init__(self):
         
-        self.p1 = DualQuaternion.identity()
-        self.p2 = DualQuaternion.identity()
-        self.p3 = DualQuaternion.identity()
-        self.proj_p31_on_p21 = np.array([0, 0, 0])
+        self.p1 = [1,1,1]
+        self.p2 = [1,1,1]
+        self.p3 =[1,1,1]
+        self.proj_p31_on_p21 = [1,1,1]
 
         # Base raster params
         self.raster_shape_rows = 5
@@ -57,8 +57,8 @@ class Raster(object):
         base_y =  np.array([0,1,0])
         base_z =  np.array([0,0,1])
 
-        self.desired_x =  np.array(self.p2.translation) - np.array(self.p1.translation)
-        self.desired_y =  np.array(self.proj_p31_on_p21) - np.array(self.p3.translation) 
+        self.desired_x =  np.array(self.p2) - np.array(self.p1)
+        self.desired_y =  np.array(self.proj_p31_on_p21) - np.array(self.p3) 
         self.desired_z = np.cross(self.desired_x, self.desired_y)
 
         rotation_matrix = self.get_rotation_matrix (base_x, base_y, base_z, self.desired_x, self.desired_y, self.desired_z)
@@ -70,9 +70,9 @@ class Raster(object):
         print("R*R-1: {}".format(np.matmul(rotation_matrix, np.linalg.inv(rotation_matrix))))
 
         # Get scaling factor
-        x_scale = np.linalg.norm(np.array(self.p2.translation) - np.array(self.p1.translation))
-        y_scale = np.linalg.norm(np.array(self.proj_p31_on_p21) - np.array(self.p3.translation))
-        translation_offset = np.array([self.p1.translation[0], self.p1.translation[1], self.p1.translation[2], 0])
+        x_scale = np.linalg.norm(np.array(self.p2) - np.array(self.p1))
+        y_scale = np.linalg.norm(np.array(self.proj_p31_on_p21) - np.array(self.p3))
+        translation_offset = np.array([self.p1[0], self.p1[1], self.p1[2], 0])
         scaling_trans_matrix = np.array([
                                 [   x_scale,    0,          0,  0],
                                 [   0,          y_scale,    0,  0],
@@ -106,7 +106,7 @@ class Raster(object):
         self.raster_pts = []
         for i in range(0, np.size(transformed_pts,1)):
             self.raster_pts.append(transformed_pts[:3])
-
+    
     def get_rotation_matrix (self, base_x, base_y, base_z, desired_x, desired_y, desired_z):
 
         # Every Column : Project desired frame axeses onto base frame
@@ -144,10 +144,10 @@ class Raster(object):
         """
 
         # Find vectors
-        vec31 = np.array(self.p3.translation, dtype = np.float64) - np.array(self.p1.translation, dtype = np.float64)
-        vec21 = np.array(self.p2.translation, dtype = np.float64)  - np.array(self.p1.translation, dtype = np.float64)
+        vec31 = np.array(self.p3, dtype = np.float64) - np.array(self.p1, dtype = np.float64)
+        vec21 = np.array(self.p2, dtype = np.float64)  - np.array(self.p1, dtype = np.float64)
         
-        self.proj_p31_on_p21 = self.p1.translation + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
+        self.proj_p31_on_p21 = self.p1 + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
 
     def plot_raster(self):
         
@@ -159,12 +159,12 @@ class Raster(object):
             ax.scatter(pts[0],pts[1], c ='r',s = 5)
             ax.text3D(pts[0],pts[1],0, str(idx), zdir = None)
             
-        ax.scatter(self.p1.translation[0],self.p1.translation[1],self.p1.translation[2], c ='b',s = 25)
-        ax.scatter(self.p2.translation[0],self.p2.translation[1],self.p2.translation[2], c ='b',s = 25)
-        ax.scatter(self.p3.translation[0],self.p3.translation[1],self.p3.translation[2], c ='b',s = 25)
-        ax.text3D(self.p1.translation[0],self.p1.translation[1],self.p1.translation[2], "P1", zdir = None)
-        ax.text3D(self.p2.translation[0],self.p2.translation[1],self.p2.translation[2], "P2", zdir = None)
-        ax.text3D(self.p3.translation[0],self.p3.translation[1],self.p3.translation[2], "P3", zdir = None)
+        ax.scatter(self.p1[0],self.p1[1],self.p1[2], c ='b',s = 25)
+        ax.scatter(self.p2[0],self.p2[1],self.p2[2], c ='b',s = 25)
+        ax.scatter(self.p3[0],self.p3[1],self.p3[2], c ='b',s = 25)
+        ax.text3D(self.p1[0],self.p1[1],self.p1[2], "P1", zdir = None)
+        ax.text3D(self.p2[0],self.p2[1],self.p2[2], "P2", zdir = None)
+        ax.text3D(self.p3[0],self.p3[1],self.p3[2], "P3", zdir = None)
 
         ax.scatter(self.proj_p31_on_p21[0],self.proj_p31_on_p21[1],self.proj_p31_on_p21[2], c = (0, 0, 1), s = 25)
         ax.text3D(self.proj_p31_on_p21[0],self.proj_p31_on_p21[1],self.proj_p31_on_p21[2], "Proj", zdir = None)
@@ -179,12 +179,12 @@ class Raster(object):
         ax = fig.add_subplot(212, projection='3d')
         for idx, pts in enumerate(self.raster_pts):
             ax.scatter(pts[0],pts[1],pts[2], c = (0,1, 0), s = 5)
-        ax.scatter(self.p1.translation[0],self.p1.translation[1],self.p1.translation[2], c ='b',s = 25)
-        ax.scatter(self.p2.translation[0],self.p2.translation[1],self.p2.translation[2], c ='b',s = 25)
-        ax.scatter(self.p3.translation[0],self.p3.translation[1],self.p3.translation[2], c ='b',s = 25)
-        ax.text3D(self.p1.translation[0],self.p1.translation[1],self.p1.translation[2], "P1", zdir = None)
-        ax.text3D(self.p2.translation[0],self.p2.translation[1],self.p2.translation[2], "P2", zdir = None)
-        ax.text3D(self.p3.translation[0],self.p3.translation[1],self.p3.translation[2], "P3", zdir = None)
+        ax.scatter(self.p1[0],self.p1[1],self.p1[2], c ='b',s = 25)
+        ax.scatter(self.p2[0],self.p2[1],self.p2[2], c ='b',s = 25)
+        ax.scatter(self.p3[0],self.p3[1],self.p3[2], c ='b',s = 25)
+        ax.text3D(self.p1[0],self.p1[1],self.p1[2], "P1", zdir = None)
+        ax.text3D(self.p2[0],self.p2[1],self.p2[2], "P2", zdir = None)
+        ax.text3D(self.p3[0],self.p3[1],self.p3[2], "P3", zdir = None)
         
         ax.scatter(self.proj_p31_on_p21[0],self.proj_p31_on_p21[1],self.proj_p31_on_p21[2], c = (0, 0, 1), s = 25)
         ax.text3D(self.proj_p31_on_p21[0],self.proj_p31_on_p21[1],self.proj_p31_on_p21[2], "Proj", zdir = None)
@@ -199,7 +199,7 @@ class Raster(object):
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
         #ax.view_init(azim=270, elev=90)
-        ax.set_aspect('equal')
+        #ax.set_aspect('equal')
         plt.tight_layout()
         plt.show()
 
@@ -208,13 +208,13 @@ if __name__ == "__main__":
 
     # Rotation about z
     theta = 280
-    myRaster.p1 = DualQuaternion.from_translation_vector([0, 0 , 0])
-    myRaster.p2 = DualQuaternion.from_translation_vector([np.cos(theta), np.sin(theta) , 0])
-    myRaster.p3 = DualQuaternion.from_translation_vector([np.sin(theta), -np.cos(theta) , 0])
+    myRaster.p1 = [0, 0 , 0]
+    myRaster.p2 = [np.cos(theta), np.sin(theta) , 0]
+    myRaster.p3 = [np.sin(theta), -np.cos(theta) , 0]
 
-    myRaster.p1 = DualQuaternion.from_translation_vector([-2, 0.2 , 0])
-    myRaster.p2 = DualQuaternion.from_translation_vector([1, 1.3 , 0])
-    myRaster.p3 = DualQuaternion.from_translation_vector([0.3, -1 , 0])
+    myRaster.p1 = [0, 0 , 0]
+    myRaster.p2 = [0, 0 , -1]
+    myRaster.p3 = [0, -1 , 0]
 
 
     myRaster.set_perp(myRaster.p1, myRaster.p2, myRaster.p3)
