@@ -6,27 +6,24 @@ License: Peanut Robotics
 
 """
 
-from dual_quaternions_ros import DualQuaternion
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class Raster(object):
 
-    def __init__(self, p1, p2, p3):
+    def __init__(self, p1, p2, p3, raster_shape_rows = 5, raster_shape_columns = 5):
         
         self.p1 = p1
         self.p2 = p2
         self.p3 = p3
+        self.raster_shape_rows = raster_shape_rows
+        self.raster_shape_columns = raster_shape_columns
         self.proj_p31_on_p21 = [1,1,1]
 
-        # Base raster params
-        self.raster_shape_rows = 5
-        self.raster_shape_columns = 5
-
         # Find helper vectors and projected point
-        vec31 = np.array(self.p3, dtype = np.float64) - np.array(self.p1, dtype = np.float64)
-        vec21 = np.array(self.p2, dtype = np.float64)  - np.array(self.p1, dtype = np.float64)
+        vec31 = np.array(self.p3) - np.array(self.p1)
+        vec21 = np.array(self.p2)  - np.array(self.p1)
         self.proj_p31_on_p21 = self.p1 + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
 
         # Generates base raster shape. Raster box is (0,0), (1,0), (0, -1), (1, -1)
@@ -187,8 +184,8 @@ class Raster(object):
 if __name__ == "__main__":
 
     theta = 45
-    #myRaster = Raster([0, 0 , 0], [np.cos(theta), np.sin(theta) , 0], [np.sin(theta), -np.cos(theta) , 0])
-    myRaster = Raster([0.5, 0 , 0],  [0, 0 , -1], [0, -1 , -0.3])
+    #myRaster = Raster([0, 0 , 0], [np.cos(theta), np.sin(theta) , 0], [np.sin(theta), -np.cos(theta) , 0], raster_shape_rows = 5, raster_shape_columns = 5)
+    myRaster = Raster([0.5, 0 , 0],  [0, 0 , -1], [0, -1 , -0.3], raster_shape_rows = 5, raster_shape_columns = 5)
 
     myRaster.transform_raster_pts()
     myRaster.plot_raster()
