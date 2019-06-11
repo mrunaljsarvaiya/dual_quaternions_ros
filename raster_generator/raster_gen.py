@@ -96,7 +96,7 @@ class Raster(object):
         # Get raster points
         self.raster_pts = []
         for i in range(0, np.size(transformed_pts,1)):
-            self.raster_pts.append(transformed_pts[:3])
+            self.raster_pts.append(transformed_pts[:3,i])
     
     def get_rotation_matrix (self, base_x, base_y, base_z, desired_x, desired_y, desired_z):
 
@@ -154,10 +154,12 @@ class Raster(object):
         #ax.set_aspect('equal')
         #ax.view_init(azim=270, elev=90)
 
-         # Plot Transformed raster
+        # Plot Transformed raster
         ax = fig.add_subplot(212, projection='3d')
         for idx, pts in enumerate(self.raster_pts):
-            ax.scatter(pts[0],pts[1],pts[2], c = (0,1, 0), s = 5)
+            ax.scatter(pts[0],pts[1],pts[2], c = (0,1, 0), s = 3)
+            ax.text3D(pts[0],pts[1],pts[2], str(idx), zdir = None)
+
         ax.scatter(self.p1[0],self.p1[1],self.p1[2], c ='b',s = 25)
         ax.scatter(self.p2[0],self.p2[1],self.p2[2], c ='b',s = 25)
         ax.scatter(self.p3[0],self.p3[1],self.p3[2], c ='b',s = 25)
@@ -186,7 +188,7 @@ if __name__ == "__main__":
 
     theta = 45
     #myRaster = Raster([0, 0 , 0], [np.cos(theta), np.sin(theta) , 0], [np.sin(theta), -np.cos(theta) , 0])
-    myRaster = Raster([0, 0 , 0],  [0, 0 , -1], [0, -1 , 0])
+    myRaster = Raster([0.5, 0 , 0],  [0, 0 , -1], [0, -1 , -0.3])
 
     myRaster.transform_raster_pts()
     myRaster.plot_raster()
