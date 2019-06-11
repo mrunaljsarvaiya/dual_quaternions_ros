@@ -13,24 +13,24 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Raster(object):
 
-    def __init__(self):
+    def __init__(self, p1, p2, p3):
         
-        self.p1 = [1,1,1]
-        self.p2 = [1,1,1]
-        self.p3 =[1,1,1]
+        self.p1 = p1
+        self.p2 = p2
+        self.p3 = p3
         self.proj_p31_on_p21 = [1,1,1]
 
         # Base raster params
         self.raster_shape_rows = 5
         self.raster_shape_columns = 5
 
-    def gen_raster_shape(self):
-        """
-        Generates base raster shape. 
-        Raster box is (0,0), (1,0), (0, -1), (1, -1) and 
-        obeys standard xy axis and orientation
-        """
-        
+        # Find helper vectors and projected point
+        vec31 = np.array(self.p3, dtype = np.float64) - np.array(self.p1, dtype = np.float64)
+        vec21 = np.array(self.p2, dtype = np.float64)  - np.array(self.p1, dtype = np.float64)
+        self.proj_p31_on_p21 = self.p1 + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
+
+        # Generates base raster shape. Raster box is (0,0), (1,0), (0, -1), (1, -1) and 
+        # obeys standard xy axis and orientation
         self.base_raster_rows = []
 
         for i in range(0,self.raster_shape_rows + 1):
@@ -94,12 +94,12 @@ class Raster(object):
             pts_matrix[:2,i] = self.base_raster_pts[i]
             pts_matrix[2:,i] = [0,1] # z =0, since base shape is on xy plane
 
-        # Apply Trasform
+        # Apply Transform
         transformation_matrix = np.matmul(rotation_matrix, scaling_trans_matrix)
         transformation_matrix = np.matmul(traslation_matrix, transformation_matrix)
+        transformed_pts = np.matmul(transformation_matrix, pts_matrix)
         print("scaling_trans_matrix \n {}".format(scaling_trans_matrix))
         print("rotation_matrix \n {}".format(rotation_matrix))
-        transformed_pts = np.matmul(transformation_matrix, pts_matrix)
         print("1st row , last column {}".format(transformed_pts[:,5]))
 
         # Get raster points
@@ -136,19 +136,6 @@ class Raster(object):
 
         return np.dot(x,y)/(np.linalg.norm(y)**2)
 
-    def set_perp(self, p1, p2, p3):
-        """
-        Finds vector perpendicular to line p1p2 towards p3
-        and projection of p3 into line p1p2
-         
-        """
-
-        # Find vectors
-        vec31 = np.array(self.p3, dtype = np.float64) - np.array(self.p1, dtype = np.float64)
-        vec21 = np.array(self.p2, dtype = np.float64)  - np.array(self.p1, dtype = np.float64)
-        
-        self.proj_p31_on_p21 = self.p1 + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
-
     def plot_raster(self):
         
         fig = plt.figure( figsize=(10, 10))
@@ -176,6 +163,7 @@ class Raster(object):
         #ax.set_aspect('equal')
         #ax.view_init(azim=270, elev=90)
 
+         # Plot Trasnformed raster
         ax = fig.add_subplot(212, projection='3d')
         for idx, pts in enumerate(self.raster_pts):
             ax.scatter(pts[0],pts[1],pts[2], c = (0,1, 0), s = 5)
@@ -200,24 +188,13 @@ class Raster(object):
         ax.set_zlabel('Z')
         #ax.view_init(azim=270, elev=90)
         #ax.set_aspect('equal')
-        plt.tight_layout()
         plt.show()
 
 if __name__ == "__main__":
-    myRaster = Raster()
 
-    # Rotation about z
-    theta = 280
-    myRaster.p1 = [0, 0 , 0]
-    myRaster.p2 = [np.cos(theta), np.sin(theta) , 0]
-    myRaster.p3 = [np.sin(theta), -np.cos(theta) , 0]
+    theta = 45
+    myRaster = Raster([0, 0 , 0], [np.cos(theta), np.sin(theta) , 0], [np.sin(theta), -np.cos(theta) , 0])
+    #myRaster = Raster([0, 0 , 0],  [0, 0 , -1], [0, -1 , 0])
 
-    myRaster.p1 = [0, 0 , 0]
-    myRaster.p2 = [0, 0 , -1]
-    myRaster.p3 = [0, -1 , 0]
-
-
-    myRaster.set_perp(myRaster.p1, myRaster.p2, myRaster.p3)
-    myRaster.gen_raster_shape()
     myRaster.transform_raster_pts()
     myRaster.plot_raster()
