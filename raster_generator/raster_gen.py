@@ -47,7 +47,7 @@ class Raster(object):
                 curr_row = self.base_raster_rows[i].reverse()
             for j in range(0, len(self.base_raster_rows[i])):
                 self.base_raster_pts.append(self.base_raster_rows[i][j])
-
+        
     def transform_raster_pts(self):
         """
         Transforms base raster shape by scaling, translatin and rotating it 
@@ -56,20 +56,14 @@ class Raster(object):
         # Get scaling factor
         x_scale = np.linalg.norm(np.array(self.p2.translation) - np.array(self.p1.translation))
         y_scale = np.linalg.norm(np.array(self.proj_p31_on_p21) - np.array(self.p3.translation))
-      
+        print("x_scale {}".format(x_scale))
         translation_offset = np.array(self.p1.translation)
         scaling_trans_matrix = np.array([
                                 [   x_scale,    0,          0,  translation_offset[0]],
                                 [   0,          y_scale,    0,  translation_offset[1]],
-                                [   0,          0,          1,  0                    ],
+                                [   0,          0,          1,  translation_offset[2]],
                                 [   0,          0,          0,  1                    ]]
                                 )
-
-        # Build matrix of pts
-        pts_matrix = np.zeros([4, len(self.base_raster_pts)])
-        for i in range(0, len(self.base_raster_pts)):
-            pts_matrix[:2,i] = self.base_raster_pts[i]
-            pts_matrix[2:,i] = [0,1] # z =0, since base shape is on xy plane
         
         # Get rotation matrix
         rotation_matrix = self.get_axis_rotation(np.array([0,0,1]), self.vec_perp)
@@ -77,23 +71,52 @@ class Raster(object):
             for j in range(0, np.size(rotation_matrix,1)):
                 if np.absolute(rotation_matrix[i][j]) < 10**-5:
                     rotation_matrix[i][j] = 0
-        # Apply Trasform
-        transformation_matrix = np.matmul(scaling_trans_matrix,rotation_matrix)
-        new_rotation_matrix = np.array([
-                                    [1, 0, 0, 0],
-                                    [0,0,1,0],
-                                    [0,-1,0,0],
-                                    [0,0,0,1]
+        
+         # Build matrix of pts
+        pts_matrix = np.zeros([4, len(self.base_raster_pts)])
+        for i in range(0, len(self.base_raster_pts)):
+            pts_matrix[:2,i] = self.base_raster_pts[i]
+            pts_matrix[2:,i] = [0,1] # z =0, since base shape is on xy plane
 
-                                    ])
-        print("R : {}".format(new_rotation_matrix))
+        # Apply 1st Trasform
+        transformation_matrix = np.matmul(scaling_trans_matrix,rotation_matrix)
         transformed_pts = np.matmul(transformation_matrix, pts_matrix)
+        print("1st row , last column {}".format(transformed_pts[:,5]))
+
+        # Rotate about vec_perp
+        new_y = np.matmul(transformation_matrix, np.array([0,1,0,1]))[:3]
+        vec_proj = - np.array(self.p3.translation) + np.array(self.proj_p31_on_p21)
+        dotVal = np.dot(vec_proj, new_y) / ( np.linalg.norm(vec_proj) * np.linalg.norm(new_y))
+        angle = np.arccos(dotVal)
+        axis = np.cross(new_y,vec_proj )
+        axis = axis/ np.linalg.norm(axis)
+
+        print("new_y: {}".format(new_y))
+        print("vec_proj: {}".format(vec_proj))
+
+        C = np.cos(angle/2.0)
+        S = np.sin(angle/2.0)
+        quat =  np.quaternion(C, axis[0]*S, axis[1]*S, axis[2]*S)
+        dualq = DualQuaternion.from_quat_pose_array([C, axis[0]*S, axis[1]*S, axis[2]*S,0,0,0])
+        
+        transformed_pts = np.matmul(dualq.homogeneous_matrix, pts_matrix)
+        print("Norm of final R:{}".format(np.linalg.det(dualq.homogeneous_matrix)))
+        print("2nd tf {}".format(dualq.homogeneous_matrix))
+        print("After 2nd tf,1st row , last column {}".format(transformed_pts[:,5]))
+        print("After 2nd tf,1st row , 1st column {}".format(transformed_pts[:,0]))
 
         # Get raster points
         self.raster_pts = []
         for i in range(0, np.size(transformed_pts,1)):
             self.raster_pts.append(transformed_pts[:3])
 
+        # new_rotation_matrix = np.array([
+        #                             [1, 0, 0, 0],
+        #                             [0,0,1,0],
+        #                             [0,-1,0,0],
+        #                             [0,0,0,1]
+
+        #                             ])
     def set_perp(self, p1, p2, p3):
         """
         Finds vector perpendicular to line p1p2 towards p3
@@ -105,8 +128,8 @@ class Raster(object):
         vec31 = np.array(self.p3.translation, dtype = np.float64) - np.array(self.p1.translation, dtype = np.float64)
         vec21 = np.array(self.p2.translation, dtype = np.float64)  - np.array(self.p1.translation, dtype = np.float64)
         
-        self.proj_p31_on_p21 = np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
-        self.vec_perp = np.array(self.p3.translation) -  ( self.p1.translation + np.array(self.proj_p31_on_p21) ) 
+        self.proj_p31_on_p21 = self.p1.translation + np.dot(vec31, vec21)/(np.linalg.norm(vec21)**2) * vec21
+        self.vec_perp = np.array(self.p3.translation) -  (np.array(self.proj_p31_on_p21) ) 
 
         self.vec_perp = np.cross(vec31, vec21)
     def plot_raster(self):
@@ -179,8 +202,8 @@ class Raster(object):
 
 if __name__ == "__main__":
     myRaster = Raster()
-    myRaster.p1 = DualQuaternion.from_translation_vector([-1, 0 , 0])
-    myRaster.p2 = DualQuaternion.from_translation_vector([1, 0 , 0])
+    myRaster.p1 = DualQuaternion.from_translation_vector([0, 0 , 0])
+    myRaster.p2 = DualQuaternion.from_translation_vector([1, 0.6 , 0])
     myRaster.p3 = DualQuaternion.from_translation_vector([0, -1 , 0])
 
     myRaster.set_perp(myRaster.p1, myRaster.p2, myRaster.p3)
